@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fuel Subsidy Prototype — Citizen & POS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="topbar">
+      <h1>Fuel Subsidy Prototype</h1>
+      <a class="small-link" href="/mnt/data/PROJECT-QUESTION2025 SEP.pdf" target="_blank" title="Open project brief">Project Brief (PDF)</a>
+    </header>
+
+    <!-- Screens container -->
+    <main class="screens">
+
+      <!-- Citizen: Welcome -->
+      <section class="screen" id="citizen-welcome">
+        <h2>Welcome to Fuel Subsidy App</h2>
+        <p class="lead">Register and access your subsidy QR code easily.</p>
+        <div class="controls">
+          <button class="btn primary" onclick="showScreen('citizen-register')">Register</button>
+          <button class="btn outline" onclick="showScreen('citizen-login')">Login</button>
+        </div>
+      </section>
+
+      <!-- Citizen: Registration -->
+      <section class="screen hidden" id="citizen-register">
+        <h2>Register for Subsidy</h2>
+        <form id="reg-form" onsubmit="event.preventDefault(); sendOTP();">
+          <label>MyKad Number
+            <input id="mykad" type="text" inputmode="numeric" maxlength="14" placeholder="123456-78-9012" required>
+          </label>
+          <label>Full Name
+            <input id="fullname" type="text" placeholder="Siti binti Ahmad" required>
+          </label>
+          <label>Phone Number
+            <input id="phone" type="tel" placeholder="+60 12-345 6789" required>
+          </label>
+          <div class="controls">
+            <button class="btn primary" type="submit">Send OTP</button>
+            <button class="btn ghost" type="button" onclick="showScreen('citizen-welcome')">Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Citizen: OTP -->
+      <section class="screen hidden" id="citizen-otp">
+        <h2>OTP Verification</h2>
+        <p>Enter the 6-digit OTP sent to your phone.</p>
+        <div class="otp-row">
+          <input maxlength="1" class="otp" id="otp1">
+          <input maxlength="1" class="otp" id="otp2">
+          <input maxlength="1" class="otp" id="otp3">
+          <input maxlength="1" class="otp" id="otp4">
+          <input maxlength="1" class="otp" id="otp5">
+          <input maxlength="1" class="otp" id="otp6">
+        </div>
+        <div class="controls">
+          <button class="btn primary" onclick="verifyOTP()">Verify</button>
+          <button class="btn ghost" onclick="showScreen('citizen-register')">Resend</button>
+        </div>
+      </section>
+
+      <!-- Citizen: Dashboard / QR -->
+      <section class="screen hidden" id="citizen-dashboard">
+        <h2>Hello, <span id="user-name">Siti</span>!</h2>
+        <div class="card">
+          <button class="btn big" onclick="showScreen('citizen-qr')">View QR Code</button>
+        </div>
+        <div class="card">
+          <p>Registration status: <strong id="status-text">Approved</strong></p>
+          <button class="btn" onclick="showScreen('citizen-welcome')">Logout</button>
+        </div>
+      </section>
+
+      <!-- Citizen: QR Display -->
+      <section class="screen hidden" id="citizen-qr">
+        <h2>Your Fuel QR Code</h2>
+        <div class="qr-placeholder">[ QR CODE ]</div>
+        <p class="muted">Show this QR to the attendant to apply subsidy.</p>
+        <div class="meta">
+          <div>MyKad: <span id="meta-mykad">123456-78-9012</span></div>
+          <div>Vehicle: <span id="meta-plate">ABC 1234</span></div>
+        </div>
+        <div class="controls">
+          <button class="btn primary" onclick="showScreen('citizen-dashboard')">Back</button>
+          <button class="btn outline" onclick="refreshQR()">Refresh</button>
+        </div>
+      </section>
+
+      <!-- POS: Home -->
+      <section class="screen hidden" id="pos-home">
+        <h2>Attendant POS</h2>
+        <p class="lead">Quick actions for gas station attendants</p>
+        <div class="controls">
+          <button class="btn primary" onclick="showScreen('pos-scan')">Scan QR Code</button>
+          <button class="btn" onclick="showScreen('pos-manual')">Manual Verify</button>
+        </div>
+      </section>
+
+      <!-- POS: Scanning -->
+      <section class="screen hidden" id="pos-scan">
+        <h2>Scanning...</h2>
+        <div class="scanner">
+          <div class="camera">[ Camera view ]</div>
+          <p class="muted">Align customer QR code within the frame.</p>
+        </div>
+        <div class="controls">
+          <button class="btn primary" onclick="simulateScan('eligible')">Simulate Eligible</button>
+          <button class="btn outline" onclick="simulateScan('noteligible')">Simulate Not Eligible</button>
+          <button class="btn ghost" onclick="simulateScan('fail')">Simulate Fail</button>
+        </div>
+      </section>
+
+      <!-- POS: Eligible -->
+      <section class="screen hidden" id="pos-eligible">
+        <div class="status-bar success">ELIGIBLE</div>
+        <div class="result-card">
+          <h3>Subsidized Price</h3>
+          <div class="price">RM 2.05 / L</div>
+          <div class="cust">MyKad: <span id="pos-mykad">123456-78-9012</span></div>
+          <div class="cust">Vehicle: <span id="pos-plate">ABC 1234</span></div>
+          <div class="controls">
+            <button class="btn primary" onclick="showScreen('pos-home')">Proceed to Pump</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- POS: Not Eligible -->
+      <section class="screen hidden" id="pos-noteligible">
+        <div class="status-bar error">NOT ELIGIBLE</div>
+        <div class="result-card">
+          <h3>Market Price</h3>
+          <div class="price">RM 3.45 / L</div>
+          <div class="reason">Reason: Income exceeds subsidy criteria</div>
+          <div class="controls">
+            <button class="btn primary" onclick="showScreen('pos-home')">Proceed at Market Price</button>
+            <button class="btn ghost" onclick="showScreen('pos-manual')">Manual Verify</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- POS: Scan Failed -->
+      <section class="screen hidden" id="pos-fail">
+        <div class="status-bar warn">SCAN FAILED</div>
+        <div class="result-card">
+          <p>QR unreadable or expired. Try rescanning or use manual verification.</p>
+          <div class="controls">
+            <button class="btn primary" onclick="showScreen('pos-scan')">Try Again</button>
+            <button class="btn outline" onclick="showScreen('pos-manual')">Manual Verification</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- POS: Manual verification -->
+      <section class="screen hidden" id="pos-manual">
+        <h2>Manual Verification</h2>
+        <form onsubmit="event.preventDefault(); manualCheck();">
+          <label>Enter MyKad
+            <input id="manual-mykad" placeholder="123456-78-9012">
+          </label>
+          <label>Enter Vehicle Plate
+            <input id="manual-plate" placeholder="ABC 1234">
+          </label>
+          <div class="controls">
+            <button class="btn primary" type="submit">Check</button>
+            <button class="btn ghost" type="button" onclick="showScreen('pos-home')">Cancel</button>
+          </div>
+        </form>
+        <div id="manual-result" class="muted"></div>
+      </section>
+
+    </main>
+
+    <footer class="footer">Prototype created for Software Engineering & HCI project — interactive HTML mockup.</footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
